@@ -55,6 +55,7 @@ function AudioCheck() {
         );
         const albumData = response.data.albums.items;
         setAlbums(albumData);
+        console.log(response.data.albums.items);
       } catch (error) {
         console.error("Error fetching albums:", error);
       }
@@ -86,14 +87,20 @@ function AudioCheck() {
       sx={{
         backgroundColor: "#121212",
         minHeight: "100vh",
-        padding: { md: 4, lg: 4, sm: 2, xs: 2 },
+        padding: { md: 4, lg: 4, sm: 2, xs: 1 },
         color: "white",
       }}
     >
       <Container maxWidth="lg">
         <Typography
-          variant="h4"
-          sx={{ mb: 3, fontWeight: "bold", color: "#1DB954" }}
+          sx={{
+            mb: 3,
+            fontWeight: "bold",
+            color: "#1DB954",
+            mt: 1,
+            textAlign: "center",
+            fontSize: { md: "2rem", sm: "1.5rem", xs: "1.55rem" },
+          }}
         >
           🎵 New Releases of Spotify on MUICIE YPUP
         </Typography>
@@ -120,6 +127,7 @@ function AudioCheck() {
                     transition: "transform 0.2s ease-in-out",
                     "&:hover": { transform: "scale(1.05)" },
                     cursor: "pointer",
+                    minHeight: "100%",
                   }}
                   onClick={() => fetchAlbumTracks(album.id)}
                 >
@@ -129,8 +137,14 @@ function AudioCheck() {
                     image={album.images[0]?.url}
                     alt={album.name}
                   />
-                  <Box sx={{ padding: 2, textAlign: "center" }}>
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  <Box
+                    sx={{
+                      px: { lg: 2, md: 2, sm: 1, xs: "3px" },
+                      py: 2,
+                      textAlign: "center",
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: "bold" }}>
                       {album.name}
                     </Typography>
                     <Typography variant="body2" sx={{ color: "#B3B3B3" }}>
