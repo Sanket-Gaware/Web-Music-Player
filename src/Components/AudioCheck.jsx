@@ -86,7 +86,7 @@ function AudioCheck() {
       sx={{
         backgroundColor: "#121212",
         minHeight: "100vh",
-        padding: 4,
+        padding: { md: 4, lg: 4, sm: 2, xs: 2 },
         color: "white",
       }}
     >
