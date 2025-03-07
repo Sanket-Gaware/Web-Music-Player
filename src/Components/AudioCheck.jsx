@@ -1,111 +1,197 @@
-import React from "react";
-import { Box, Container, Card, CardMedia, Typography } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Container,
+  Card,
+  CardMedia,
+  Typography,
+  Button,
+  Grid,
+  TextField,
+} from "@mui/material";
+import axios from "axios";
 
 function AudioCheck() {
-  return (
-    <>
-      <Container sx={{ maxWidth: "sm", marginTop: 4 }}>
-        <Card sx={{ borderRadius: 2, boxShadow: 3, overflow: "hidden" }}>
-          <CardMedia
-            component="img"
-            height="300"
-            image="https://img.freepik.com/free-photo/top-view-sunflowers-frame-with-copy-space_23-2150250795.jpg?t=st=1741172187~exp=1741175787~hmac=cba4f42f652d2a3d998cfb8aadbd09f7569fac1c95f688d37bb4d11bb73cdf98&w=1380"
-            alt="Sunflowers"
-          />
-          <Box
-            sx={{
-              padding: 3,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              backgroundColor: "#f7f7f7",
-            }}
-          >
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Enjoy Your Music!
-            </Typography>
-            <audio controls style={{ width: "100%" }}>
-              <source
-                src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-                type="audio/mpeg"
-              />
-            </audio>
-          </Box>
-        </Card>
-      </Container>
+  const [token, setToken] = useState("");
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-      {playList.map((data, i) => {
-        return (
-          <Card className="border p-1 px-2 fw-bold m-1 mx-3" key={i}>
-            <Typography> {data.song}</Typography>
-          </Card>
+  useEffect(() => {
+    const fetchToken = async () => {
+      const clientId = "522157dae09042dd9a3b57aa40938a8d";
+      const clientSecret = "a730f2aaf94a48ab84d65d0a3ee6b783";
+      const authString = btoa(`${clientId}:${clientSecret}`);
+
+      try {
+        const response = await axios.post(
+          "https://accounts.spotify.com/api/token",
+          "grant_type=client_credentials",
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Basic ${authString}`,
+            },
+          }
         );
-      })}
-    </>
+        setToken(response.data.access_token);
+      } catch (error) {
+        console.error("Error fetching token:", error);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchAlbums = async () => {
+      try {
+        const response = await axios.get(
+          "https://api.spotify.com/v1/browse/new-releases",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const albumData = response.data.albums.items;
+        setAlbums(albumData);
+      } catch (error) {
+        console.error("Error fetching albums:", error);
+      }
+    };
+
+    fetchAlbums();
+  }, [token]);
+
+  const fetchAlbumTracks = async (albumId) => {
+    try {
+      const response = await axios.get(
+        `https://api.spotify.com/v1/albums/${albumId}/tracks`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSelectedAlbum({ id: albumId, tracks: response.data.items });
+    } catch (error) {
+      console.error("Error fetching tracks:", error);
+    }
+  };
+
+  const filteredAlbums = albums.filter((album) =>
+    album.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: "#121212",
+        minHeight: "100vh",
+        padding: 4,
+        color: "white",
+      }}
+    >
+      <Container maxWidth="lg">
+        <Typography
+          variant="h4"
+          sx={{ mb: 3, fontWeight: "bold", color: "#1DB954" }}
+        >
+          🎵 New Releases of Spotify on MUICIE YPUP
+        </Typography>
+
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search Albums..."
+          sx={{ mb: 3, backgroundColor: "white", borderRadius: 1 }}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
+        {!selectedAlbum ? (
+          <Grid container spacing={3}>
+            {filteredAlbums.map((album) => (
+              <Grid item xs={6} sm={6} md={4} lg={3} key={album.id}>
+                <Card
+                  sx={{
+                    backgroundColor: "#181818",
+                    color: "white",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: 3,
+                    transition: "transform 0.2s ease-in-out",
+                    "&:hover": { transform: "scale(1.05)" },
+                    cursor: "pointer",
+                  }}
+                  onClick={() => fetchAlbumTracks(album.id)}
+                >
+                  <CardMedia
+                    component="img"
+                    height="200"
+                    image={album.images[0]?.url}
+                    alt={album.name}
+                  />
+                  <Box sx={{ padding: 2, textAlign: "center" }}>
+                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                      {album.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#B3B3B3" }}>
+                      {album.artists[0]?.name}
+                    </Typography>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box>
+            <Button
+              onClick={() => setSelectedAlbum(null)}
+              sx={{ mb: 2, backgroundColor: "#1DB954", color: "black" }}
+            >
+              🔙 Back to Albums
+            </Button>
+            <Typography
+              variant="h5"
+              sx={{ mb: 3, fontWeight: "bold", color: "#1DB954" }}
+            >
+              Songs from {selectedAlbum.tracks[0]?.album?.name || "this album"}
+            </Typography>
+            {selectedAlbum.tracks.map((track, index) => (
+              <Card
+                key={index}
+                sx={{ backgroundColor: "#181818", mb: 2, padding: 2 }}
+              >
+                <Typography sx={{ color: "white" }} variant="h6">
+                  {track.name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#B3B3B3" }}>
+                  {track.artists.map((artist) => artist.name).join(", ")}
+                </Typography>
+                {track.preview_url ? (
+                  <audio controls style={{ width: "100%", marginTop: "10px" }}>
+                    <source src={track.preview_url} type="audio/mpeg" />
+                  </audio>
+                ) : (
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#1DB954",
+                      color: "black",
+                      fontWeight: "bold",
+                      marginTop: 2,
+                    }}
+                    href={track.external_urls.spotify}
+                    target="_blank"
+                  >
+                    🎵 Listen on Spotify
+                  </Button>
+                )}
+              </Card>
+            ))}
+          </Box>
+        )}
+      </Container>
+    </Box>
   );
 }
 
 export default AudioCheck;
-
-const playList = [
-  {
-    id: 1,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/7rVW1Rbk56/VW1MEg9BWk/size_l_1734769712.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 2,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/5sA8bs7r5e/Ttkad9Z9M2/size_l_1734769789.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 3,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/0g65xU4W9D/lPZbEXA7eb/size_l_1734769675.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 4,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/3o4uPOqMw5/2IowBhlZXP/size_l_1734769632.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 5,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/6t81Wc2JmA/0Tb5rtY8lw/size_l_1734769620.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 6,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/4sYjkxYvE4/Fqn8lr9L41/size_l_1734769552.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 7,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/0d5xwGVH5Z/xS5JqZTqEm/size_l_1734769499.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 8,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/2q8JwN56eF/ZyAxoR5miu/size_l_1734769448.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 9,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/6vZZ5l0P2b/TByebQNrO4/size_l_1734769362.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: 10,
-    image:
-      "https://a10.gaanacdn.com/gn_pl_img/playlists/7oZ17K6EHz/mhHoggn0Tq/size_l_1734769291.webp",
-    song: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-];
