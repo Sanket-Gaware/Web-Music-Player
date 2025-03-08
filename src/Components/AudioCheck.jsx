@@ -9,7 +9,11 @@ import {
   Grid,
   TextField,
 } from "@mui/material";
-import axios from "axios";
+import {
+  GenerateToken,
+  GetArtistAlbums,
+  GetArtistTopTracks,
+} from "./Utils/Util";
 
 function AudioCheck() {
   const [token, setToken] = useState("");
@@ -19,69 +23,30 @@ function AudioCheck() {
 
   useEffect(() => {
     const fetchToken = async () => {
-      const clientId = "522157dae09042dd9a3b57aa40938a8d";
-      const clientSecret = "a730f2aaf94a48ab84d65d0a3ee6b783";
-      const authString = btoa(`${clientId}:${clientSecret}`);
-
-      try {
-        const response = await axios.post(
-          "https://accounts.spotify.com/api/token",
-          "grant_type=client_credentials",
-          {
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              Authorization: `Basic ${authString}`,
-            },
-          }
-        );
-        setToken(response.data.access_token);
-      } catch (error) {
-        console.error("Error fetching token:", error);
-      }
+      const data = await GenerateToken();
+      // console.log(data);
+      setToken(data);
     };
     fetchToken();
   }, []);
 
   useEffect(() => {
     if (!token) return;
-
     const fetchAlbums = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.spotify.com/v1/browse/new-releases",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const albumData = response.data.albums.items;
-        setAlbums(albumData);
-        console.log(response.data.albums.items);
-      } catch (error) {
-        console.error("Error fetching albums:", error);
-      }
+      const albumData = await GetArtistAlbums(token);
+      setAlbums(albumData);
+      // console.log("---" + albumData);
     };
-
     fetchAlbums();
   }, [token]);
 
   const fetchAlbumTracks = async (albumId) => {
-    try {
-      const response = await axios.get(
-        `https://api.spotify.com/v1/albums/${albumId}/tracks`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setSelectedAlbum({ id: albumId, tracks: response.data.items });
-    } catch (error) {
-      console.error("Error fetching tracks:", error);
-    }
+    const response = await GetArtistTopTracks(albumId, token);
+    setSelectedAlbum({ id: albumId, tracks: response });
   };
-
   const filteredAlbums = albums.filter((album) =>
     album.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   return (
     <Box
       sx={{
@@ -96,7 +61,7 @@ function AudioCheck() {
           sx={{
             mb: 3,
             fontWeight: "bold",
-            color: "#1DB954",
+            color: "white",
             mt: 1,
             textAlign: "center",
             fontSize: { md: "2rem", sm: "1.5rem", xs: "1.55rem" },
@@ -109,7 +74,11 @@ function AudioCheck() {
           fullWidth
           variant="outlined"
           placeholder="Search Albums..."
-          sx={{ mb: 3, backgroundColor: "white", borderRadius: 1 }}
+          sx={{
+            mb: 3,
+            backgroundColor: "white",
+            borderRadius: 1,
+          }}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
@@ -161,11 +130,11 @@ function AudioCheck() {
               onClick={() => setSelectedAlbum(null)}
               sx={{ mb: 2, backgroundColor: "#1DB954", color: "black" }}
             >
-              🔙 Back to Albums
+              🔙 Back to Albums 
             </Button>
             <Typography
               variant="h5"
-              sx={{ mb: 3, fontWeight: "bold", color: "#1DB954" }}
+              sx={{ mb: 3, fontWeight: "bold", color: "white" }}    
             >
               Songs from {selectedAlbum.tracks[0]?.album?.name || "this album"}
             </Typography>
@@ -207,5 +176,4 @@ function AudioCheck() {
     </Box>
   );
 }
-
 export default AudioCheck;
